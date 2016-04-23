@@ -11,7 +11,7 @@ namespace ScriptLibrary
     {
         int value = 10;
 
-        public delegate void TestDelegate();
+        public delegate int TestDelegate();
 
         private TestDelegate OnDelegateTest;
 
@@ -42,15 +42,16 @@ namespace ScriptLibrary
             a = 20;
         }
 
-        void invokeTarget()
+        int invokeTarget()
         {
             Console.WriteLine("Hello user delegate!");
+            return value;
         }
 
         public int Test2(int a)
         {
             int c = 100;
-            return value + a;
+            return OnDelegateTest() + a;
         }
 
         public static int Test3(int a)

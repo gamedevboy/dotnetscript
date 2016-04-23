@@ -28,6 +28,9 @@ namespace DotNetScript.Runtime
                 return null;
 
             var typeDef = typeRef.Resolve();
+            if (typeDef == null)
+                return null;
+
             var module = typeDef.Module;
             var scriptAssembly = ScriptAssemblies.GetOrAdd(module, _ => new ScriptHostAssembly(module.Assembly));
             return scriptAssembly.TypeSystem.GetType(typeRef);

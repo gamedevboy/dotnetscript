@@ -42,8 +42,8 @@ namespace DotNetScriptConsole
                 var myFoo = type.CreateInstance();
                 var foo = myFoo.GetHostInstance<Foo<int>>();
                 foo.VirtualTest("Abc");
-                //var method = type.GetMethod("Test2");
-                //var ret = method.Invoke(myFoo, 10);
+                var method = type.GetMethod("Test2");
+                var ret = method.Invoke(myFoo, 10);
                 //ret = type.GetMethod("Test3").Invoke(null, 100);
             }
         }

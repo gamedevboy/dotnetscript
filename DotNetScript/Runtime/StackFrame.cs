@@ -34,7 +34,7 @@ namespace DotNetScript.Runtime
                 var type = _.VariableType;
                 if (!type.IsValueType) return null;
 
-                var scriptType = ScriptContext.Get(type.Module).TypeSystem.GetType(type);
+                var scriptType = ScriptContext.GetType(type);
                 return scriptType.IsHost ? Activator.CreateInstance(scriptType.HostType) : scriptType.CreateInstance();
             }).ToArray();
 

@@ -148,12 +148,10 @@ namespace DotNetScript.Runtime
 
             var callArgs = new ScriptCallArguments(method);
             var targetObject = methodRef.HasThis ? _runtimeContext.PopFromStack() : null;
-            if (methodRef.Name == "WriteLine")
-            {
 
-            }
-
-            method.Invoke(targetObject, callArgs.Arguments);
+            var ret = method.Invoke(targetObject, callArgs.Arguments);
+            if( method.HasReturn )
+                _runtimeContext.PushToStack(ret);
         }
 
         private void ExecNext(Instruction instruction)

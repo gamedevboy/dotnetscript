@@ -14,25 +14,23 @@ namespace DotNetScript.Types
         public ScriptType[] ParamTypes => _paramTypes;
 
         public bool HasThis => _methodDef.HasThis;
-        public ScriptType ReturnType { get; }
+
+        private readonly ScriptType _returnType;
+        public ScriptType ReturnType => _returnType;
+
+        public bool HasReturn { get; }
 
         internal ScriptMethodBase(ScriptType declareType, MethodDefinition methodDef)
             : base(declareType, methodDef)
         {
             _methodDef = methodDef;
+            _returnType = _methodDef.ReturnType.ContainsGenericParameter ? null : ScriptContext.GetType(_methodDef.ReturnType);
+            HasReturn = _returnType?.Name != "Void";
 
             if (!_methodDef.Parameters.Any(_=>_.ParameterType.IsGenericParameter || _.ParameterType.ContainsGenericParameter))
             {
-                _paramTypes = _methodDef.Parameters.Select(_ =>
-                {
-                    if (_.ParameterType.Resolve() == declareType.TypeDefinition)
-                        return declareType;
-
-                    return ScriptContext.GetType(_.ParameterType);
-                }).ToArray();
+                _paramTypes = _methodDef.Parameters.Select(_ => _.ParameterType.Resolve() == declareType.TypeDefinition ? declareType : ScriptContext.GetType(_.ParameterType)).ToArray();
             }
-
-            //ReturnType = ScriptContext.GetType(methodDef.ReturnType);
         }
 
         protected abstract MethodBase GetNativeMethod(Type[] types);

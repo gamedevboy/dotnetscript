@@ -40,6 +40,7 @@ namespace DotNetScript.Types
 
         private readonly ScriptType _baseType;
         public ScriptType BaseType => _baseType;
+
         private bool _isInitialized;
 
         internal ScriptType(TypeDefinition typeDef, ScriptAssembly scriptAssembly, params ScriptType[] genericTypes) :
