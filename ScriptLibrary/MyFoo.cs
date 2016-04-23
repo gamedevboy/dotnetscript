@@ -10,6 +10,7 @@ namespace ScriptLibrary
     public class MyFoo : Foo<int>
     {
         int value = 10;
+        int[,] values = new int[10,10];
 
         public delegate int TestDelegate();
 
@@ -35,6 +36,7 @@ namespace ScriptLibrary
             OnDelegateTest = invokeTarget;
 
             OnDelegateTest();
+            values[0,0] = 100;
         }
 
         void Test1(ref int a)

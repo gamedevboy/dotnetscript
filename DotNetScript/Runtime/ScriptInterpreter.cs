@@ -118,23 +118,39 @@ namespace DotNetScript.Runtime
         private void Newobj(Instruction instruction)
         {
             var methodRef = (MethodReference)instruction.Operand;
-            var scriptType = ScriptContext.GetType(methodRef.DeclaringType);
-            var method = scriptType.GetMethod(methodRef);
-            var callArgs = new ScriptCallArguments(method);
-            var scriptObject = new ScriptObject(scriptType);
-
-            if (scriptType.HostType.IsSubclassOf(typeof (Delegate)))
+            var typeRef = methodRef.DeclaringType;
+            if (typeRef.IsArray)
             {
-                var scriptDelegate = new ScriptDelegate(callArgs.Arguments[0], (ScriptMethodBase)callArgs.Arguments[1]);
-                var invokeMethod = scriptType.TypeDefinition.Methods.FirstOrDefault(_ => _.Name == "Invoke");
-                if (invokeMethod != null)
-                    method.Invoke(scriptObject, scriptDelegate, ScriptDelegate.GetInvokePtr(invokeMethod.Parameters.Count));
+                var arrayType = (ArrayType) typeRef;
+                var scriptType = ScriptContext.GetType(arrayType.ElementType);
+                var hostArrayType = scriptType.HostType.MakeArrayType(arrayType.Rank);
+                var callArgs = new ScriptCallArguments(methodRef.Parameters.Count,
+                    methodRef.Parameters.Select(_ => ScriptContext.GetType(_.ParameterType)).ToArray());
+
+                _runtimeContext.PushToStack(Activator.CreateInstance(hostArrayType, callArgs.Arguments));
             }
             else
             {
-                method.Invoke(scriptObject, callArgs.Arguments);
+                var scriptType = ScriptContext.GetType(typeRef);
+                var method = scriptType.GetMethod(methodRef);
+                var callArgs = new ScriptCallArguments(method);
+                var scriptObject = new ScriptObject(scriptType);
+
+                if (scriptType.HostType.IsSubclassOf(typeof (Delegate)))
+                {
+                    var scriptDelegate = new ScriptDelegate(callArgs.Arguments[0],
+                        (ScriptMethodBase) callArgs.Arguments[1]);
+                    var invokeMethod = scriptType.TypeDefinition.Methods.FirstOrDefault(_ => _.Name == "Invoke");
+                    if (invokeMethod != null)
+                        method.Invoke(scriptObject, scriptDelegate,
+                            ScriptDelegate.GetInvokePtr(invokeMethod.Parameters.Count));
+                }
+                else
+                {
+                    method.Invoke(scriptObject, callArgs.Arguments);
+                }
+                _runtimeContext.PushToStack(scriptObject);
             }
-            _runtimeContext.PushToStack(scriptObject);
         }
 
         private void Call(Instruction instruction)
@@ -526,9 +542,10 @@ namespace DotNetScript.Runtime
         private void Newarr(Instruction instruction)
         {
             var typeRef = (TypeReference)instruction.Operand;
-            var arrayType = ScriptContext.Get(typeRef.Module).TypeSystem.GetType(typeRef).HostType;
-            dynamic length = _runtimeContext.PopFromStack();
-            _runtimeContext.PushToStack(Array.CreateInstance(arrayType, length));
+            var arrayType = ScriptContext.GetType(typeRef).HostType;
+            var length = _runtimeContext.PopFromStack();
+
+            _runtimeContext.PushToStack(Activator.CreateInstance(arrayType.MakeArrayType(1), length));
         }
 
         private void Pop()
