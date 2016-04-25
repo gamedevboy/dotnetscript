@@ -10,13 +10,11 @@ namespace DotNetScript.Types
     {
         private readonly MethodDefinition _methodDef;
         internal MethodDefinition MethodDefinition => _methodDef;
-        private readonly ScriptType[] _paramTypes;
-        public ScriptType[] ParamTypes => _paramTypes;
+        public ScriptType[] ParamTypes { get; }
 
         public bool HasThis => _methodDef.HasThis;
 
-        private readonly ScriptType _returnType;
-        public ScriptType ReturnType => _returnType;
+        public ScriptType ReturnType { get; }
 
         public bool HasReturn { get; }
 
@@ -24,12 +22,12 @@ namespace DotNetScript.Types
             : base(declareType, methodDef)
         {
             _methodDef = methodDef;
-            _returnType = _methodDef.ReturnType.ContainsGenericParameter ? null : ScriptContext.GetType(_methodDef.ReturnType);
-            HasReturn = _returnType?.Name != "Void";
+            ReturnType = _methodDef.ReturnType.ContainsGenericParameter ? null : ScriptContext.GetType(_methodDef.ReturnType);
+            HasReturn = ReturnType?.Name != "Void";
 
             if (!_methodDef.Parameters.Any(_=>_.ParameterType.IsGenericParameter || _.ParameterType.ContainsGenericParameter))
             {
-                _paramTypes = _methodDef.Parameters.Select(_ => _.ParameterType.Resolve() == declareType.TypeDefinition ? declareType : ScriptContext.GetType(_.ParameterType)).ToArray();
+                ParamTypes = _methodDef.Parameters.Select(_ => _.ParameterType.Resolve() == declareType.TypeDefinition ? declareType : ScriptContext.GetType(_.ParameterType)).ToArray();
             }
         }
 
@@ -44,7 +42,7 @@ namespace DotNetScript.Types
                 if (scriptObject?.HostInstance != null)
                     target = scriptObject.HostInstance;
 
-                return GetNativeMethod(args.Select(_ => _.GetType()).ToArray())?.Invoke(target, args);
+                return GetNativeMethod(args.Select(_ => _?.GetType()).ToArray())?.Invoke(target, args);
             }
             else
             {

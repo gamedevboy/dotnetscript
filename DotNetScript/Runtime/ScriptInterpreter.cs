@@ -56,7 +56,7 @@ namespace DotNetScript.Runtime
         {
             while (instruction != null)
             {
-                Console.WriteLine($"{instruction.OpCode} {instruction.Operand}");
+                Console.WriteLine($"{instruction.Offset.ToString("x2")} {instruction.OpCode} {instruction.Operand}");
 
                 switch (instruction.OpCode.FlowControl)
                 {

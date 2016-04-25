@@ -71,15 +71,17 @@ namespace DotNetScript.Types
 
             var method = GetScriptType().GetMethod(methodName);
 
-            if (RuntimeContext.Current.IsMethodOnStack(method))
-                return Tuple.Create(false, (object)null);
-
-            return Tuple.Create(method != null, method?.Invoke(method.IsHost ? this : HostInstance, args));
+            return RuntimeContext.Current.IsMethodOnStack(method) ? Tuple.Create(false, (object)null) : Tuple.Create(method != null, method?.Invoke(method.IsHost ? this : HostInstance, args));
         }
 
         internal object this[FieldDefinition fieldDef]
         {
-            get { return _fields[fieldDef.Name]; }
+            get
+            {
+                object value;
+                _fields.TryGetValue(fieldDef.Name, out value);
+                return value;
+            }
             set { _fields[fieldDef.Name] = value; }
         }
     }

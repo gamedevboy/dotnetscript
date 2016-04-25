@@ -35,7 +35,8 @@ namespace DotNetScript.Types
 
         protected override MethodBase GetNativeMethod(Type[] types)
         {
-            var nativeMethod = _nativeMethods.FirstOrDefault(_ => _.Name == MethodDefinition.Name && IsTypesMatch(_.GetParameters().Select(p=>p.ParameterType).ToArray(), types));
+            //var nativeMethod = _nativeMethods.FirstOrDefault(_ => _.Name == MethodDefinition.Name && IsTypesMatch(_.GetParameters().Select(p=>p.ParameterType).ToArray(), types));
+            var nativeMethod = _nativeMethods.FirstOrDefault(_ => _.MetadataToken == MethodDefinition.MetadataToken.ToInt32());
 
             if (nativeMethod.ContainsGenericParameters)
             {
