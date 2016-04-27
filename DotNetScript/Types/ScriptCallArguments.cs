@@ -28,10 +28,10 @@ namespace DotNetScript.Types
 
                 var scriptObjectArg = arg as ScriptObject;
 
-                if (scriptObjectArg != null && paramTypes[i].IsHost)
+                if (paramTypes != null && scriptObjectArg != null && paramTypes[i] != null && paramTypes[i].IsHost)
                     arg = scriptObjectArg.HostInstance;
 
-                if (scriptObjectArg == null && !paramTypes[i].IsHost)
+                if (paramTypes != null && scriptObjectArg == null && paramTypes[i] != null && !paramTypes[i].IsHost)
                     arg = ScriptObject.FromHostObject(arg);
 
                 _arguments[i] = arg;

@@ -10,14 +10,21 @@ namespace DotNetScript.Types
     {
         private readonly List<ScriptType> _genericTypes = new List<ScriptType>();
         public IReadOnlyList<ScriptType> GenericTypes => _genericTypes;
-
-        private readonly MethodInfo[] _nativeMethods;
+        private readonly Dictionary<int, MethodInfo> _nativeMethods = new Dictionary<int, MethodInfo>();
 
         internal ScriptMethodInfo(ScriptType declareType, MethodDefinition methodDef, params ScriptType[] genericTypes)
             : base(declareType, methodDef)
         {
             _genericTypes.AddRange(genericTypes);
-            _nativeMethods = ( DeclareType.HostType).GetMethods(BindingFlags.FlattenHierarchy| BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            var methods = DeclareType.HostType.GetMethods(BindingFlags.FlattenHierarchy | 
+                                                          BindingFlags.Public |
+                                                          BindingFlags.NonPublic | 
+                                                          BindingFlags.Static |
+                                                          BindingFlags.Instance);
+            foreach (var method in methods)
+            {
+                _nativeMethods[method.MetadataToken] = method;
+            }
         }
 
         public ScriptMethodInfo MakeGeneric(params ScriptType[] genericTypes)
@@ -35,12 +42,16 @@ namespace DotNetScript.Types
 
         protected override MethodBase GetNativeMethod(Type[] types)
         {
-            //var nativeMethod = _nativeMethods.FirstOrDefault(_ => _.Name == MethodDefinition.Name && IsTypesMatch(_.GetParameters().Select(p=>p.ParameterType).ToArray(), types));
-            var nativeMethod = _nativeMethods.FirstOrDefault(_ => _.MetadataToken == MethodDefinition.MetadataToken.ToInt32());
+            MethodInfo nativeMethod;
+            if (!_nativeMethods.TryGetValue(MethodDefinition.MetadataToken.ToInt32(), out nativeMethod))
+            {
+                if (DeclareType.IsDelegate)
+                    nativeMethod = ScriptDelegate.GetDelegateType(types.Length).GetMethod("Invoke");
+            }
 
             if (nativeMethod.ContainsGenericParameters)
             {
-                nativeMethod = nativeMethod.MakeGenericMethod(_genericTypes.Select(_=>_.HostType).ToArray());
+                nativeMethod = nativeMethod.MakeGenericMethod(_genericTypes.Select(_ => _.HostType).ToArray());
             }
 
             return nativeMethod;

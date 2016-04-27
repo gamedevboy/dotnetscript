@@ -12,15 +12,15 @@ namespace ScriptLibrary
         int value = 10;
         int[,] values = new int[10,10];
 
-        //public enum Types
-        //{
-        //    None = 0,
-        //    Type1 = 1 << 0,
-        //    Type2 = 1 << 2,
-        //    All = Type1 | Type2
-        //}
+        public enum Types
+        {
+            None = 0,
+            Type1 = 1 << 0,
+            Type2 = 1 << 2,
+            All = Type1 | Type2
+        }
 
-       // private Types _type;
+        private Types _type;
 
         public delegate int TestDelegate();
 
@@ -51,7 +51,7 @@ namespace ScriptLibrary
             OnDelegateTest();
             values[0,0] = 100;
 
-            //_type = Types.All;
+            _type = Types.All;
         }
 
         private void MyFoo_OnTest1(object sender, EventArgs e)
