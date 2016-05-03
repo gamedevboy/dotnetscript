@@ -30,23 +30,38 @@ namespace DotNetScript.Runtime
 
             _runtimeContext.PushCallStack(scriptMethod, callArgs);
 
-            var inst = scriptMethod.MethodDefinition.Body.Instructions[0];
+            var instruction = scriptMethod.MethodDefinition.Body.Instructions[0];
 
             while (true)
             {
                 try
                 {
-                    Execute(ref inst);
+                    Execute(ref instruction);
                     break;
                 }
-                catch (ScriptException scriptException)
+                catch (ScriptException ex)
                 {
-                    break;
+                    if (HandleException(scriptMethod, ex.InnerException, ref instruction))
+                    {
+                        _runtimeContext.PushToStack(ex.InnerException);
+                        continue;
+                    }
+
+                    _runtimeContext.PopCallStack();
+
+                    throw;
                 }
-                //catch (Exception exception)
-                //{
-                //    throw exception;
-                //}
+                catch (Exception ex)
+                {
+                    if (HandleException(scriptMethod, ex, ref instruction))
+                    {
+                        _runtimeContext.PushToStack(ex);
+                        continue;
+                    }
+
+                    _runtimeContext.PopCallStack();
+                    throw;
+                }
             }
 
             return _runtimeContext.PopCallStack().Return();
@@ -86,7 +101,7 @@ namespace DotNetScript.Runtime
 
         private void ExecThrow(Instruction instruction)
         {
-            throw new NotImplementedException();
+            throw new ScriptException("", (Exception)((ScriptObject)_runtimeContext.PopFromStack()).HostInstance);
         }
 
         private void ExecReturn(Instruction instruction)
@@ -352,12 +367,7 @@ namespace DotNetScript.Runtime
                     Ldc_S(instruction);
                     break;
                 case Code.Ldftn:
-                    var methodRef = (MethodReference) instruction.Operand;
-                    _runtimeContext.PushToStack(ScriptContext.GetMethod(methodRef));
-                    //Debug.Assert(methodRef.IsGenericInstance == false);
-                    //Debug.Assert(methodRef.Resolve() != null);
-                    //ScriptObject.CheckType(methodRef.DeclaringType);
-                    //_runtimeContext.PushToStack(methodRef.Resolve());
+                    Ldftn(instruction);
                     break;
                 case Code.Ldtoken:
                     {
@@ -403,6 +413,12 @@ namespace DotNetScript.Runtime
                 default:
                     throw new NotImplementedException($"opcode {instruction.OpCode.Name} not implemented!");
             }
+        }
+
+        private void Ldftn(Instruction instruction)
+        {
+            var methodRef = (MethodReference)instruction.Operand;
+            _runtimeContext.PushToStack(ScriptContext.GetMethod(methodRef));
         }
 
         private void Ldloca(Instruction instruction)
@@ -459,7 +475,7 @@ namespace DotNetScript.Runtime
 
             var scriptField = ScriptContext.Get(typeRef.Module)?.TypeSystem.GetType(typeRef)?.GetField(fieldRef);
             Debug.Assert(scriptField != null);
-            if (scriptField != null) _runtimeContext.PushToStack(scriptField.GetValue(target));
+            _runtimeContext.PushToStack(scriptField.GetValue(target));
         }
 
         private void Conv_R8()
@@ -610,6 +626,7 @@ namespace DotNetScript.Runtime
             {
                 dynamic op2 = _runtimeContext.PopFromStack();
                 dynamic op1 = _runtimeContext.PopFromStack();
+
                 if (op2 is Enum)
                     op2 = Convert.ChangeType(op2, op1.GetType());
 

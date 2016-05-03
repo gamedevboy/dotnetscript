@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using DotNetScript.Runtime;
 using Mono.Cecil;
-using Mono.Cecil.Rocks;
 
 namespace DotNetScript.Types
 {
@@ -30,6 +29,8 @@ namespace DotNetScript.Types
         private List<ScriptMethodInfo> _methods;
         private List<ScriptConstructorInfo> _constructors;
 
+        private static readonly HashSet<string> StaticConstructor = new HashSet<string>();
+
         private ConcurrentDictionary<FieldDefinition, ScriptFieldInfo> _fieldInfos;
 
         public IReadOnlyList<ScriptMethodInfo> Methods => _methods;
@@ -46,9 +47,10 @@ namespace DotNetScript.Types
         internal ScriptType(TypeDefinition typeDef, ScriptAssembly scriptAssembly, params ScriptType[] genericTypes) :
             this(typeDef, scriptAssembly)
         {
-            _baseType = ScriptContext.GetType(_typeDef.BaseType);
+            _baseType = _typeDef.Interfaces.Any(_ => _.Name == "IAsyncStateMachine") ? ScriptContext.GetType(typeof(ScriptAsyncStateMachine)) : ScriptContext.GetType(_typeDef.BaseType);
+
             HostType = GetHostType();
-            IsDelegate = HostType.BaseType.Name == "MulticastDelegate";
+            IsDelegate = HostType.BaseType?.Name == "MulticastDelegate";
             _genericTypes.AddRange(genericTypes);
 
             Initialize();
@@ -65,7 +67,19 @@ namespace DotNetScript.Types
             _methods = methods.Where(_ => !_.IsConstructor).Select(_ => new ScriptMethodInfo(this, _)).ToList();
             _constructors = methods.Where(_ => _.IsConstructor).Select(_ => new ScriptConstructorInfo(this, _)).ToList();
 
-            _fieldInfos = new ConcurrentDictionary<FieldDefinition, ScriptFieldInfo>(_typeDef.Fields.ToDictionary(_ => _, _ => new ScriptFieldInfo(this, _)));
+            _fieldInfos =
+                new ConcurrentDictionary<FieldDefinition, ScriptFieldInfo>(_typeDef.Fields.ToDictionary(_ => _,
+                    _ => new ScriptFieldInfo(this, _)));
+
+            if (IsHost) return this;
+
+            lock (StaticConstructor)
+            {
+                if (StaticConstructor.Contains(_typeDef.FullName)) return this;
+
+                StaticConstructor.Add(_typeDef.FullName);
+                _constructors.FirstOrDefault(_ => _.Name == ".cctor")?.Invoke(null);
+            }
 
             return this;
         }
@@ -108,8 +122,10 @@ namespace DotNetScript.Types
                             case GenericParameterType.Method:
                                 {
                                     var ownerMethodDef = (MethodDefinition)genericParameter.Owner;
+
                                     Debug.Assert(ownerMethod != null);
-                                    Debug.Assert(ownerMethodDef == ownerMethod?.MethodDefinition);
+                                    Debug.Assert(ownerMethodDef == ownerMethod.MethodDefinition);
+
                                     return ownerMethod.GenericTypes[genericParameter.Position];
                                 }
                             default:

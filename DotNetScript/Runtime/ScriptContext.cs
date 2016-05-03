@@ -55,6 +55,12 @@ namespace DotNetScript.Runtime
             return ret;
         }
 
+        internal static ScriptType GetType(Type type)
+        {
+            var module = ScriptAssemblies.FirstOrDefault().Key;
+            return GetType(module.Import(type));
+        }
+
         internal static bool IsHost(ModuleDefinition module)
         {
             ScriptAssembly scriptAssembly;

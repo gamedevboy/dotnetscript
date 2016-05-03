@@ -52,6 +52,37 @@ namespace ScriptLibrary
             values[0,0] = 100;
 
             _type = Types.All;
+            Run();
+
+            try
+            {
+                throw new NotImplementedException();
+            }
+            catch (NotImplementedException ie)
+            {
+                Console.WriteLine("Hello NotImplementedException");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Hello Exception");
+            }
+            finally
+            {
+                Console.WriteLine("Hello Finally");
+            }
+        }
+
+        private async void Run()
+        {
+            await RunAsync();
+        }
+
+        private async Task RunAsync()
+        {
+            await Task.Run(() =>
+            {
+                Console.WriteLine("Hello async!");
+            });
         }
 
         private void MyFoo_OnTest1(object sender, EventArgs e)

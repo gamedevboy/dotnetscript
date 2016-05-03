@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\RuntimeContext.cs" />
+    <Compile Include="Runtime\ScriptAsyncStateMachine.cs" />
     <Compile Include="Types\Attributes\ScriptHostWarpperAttribute.cs" />
     <Compile Include="Runtime\Host\ScriptHostAssembly.cs" />
     <Compile Include="Runtime\Host\ScriptHostTypeSystem.cs" />

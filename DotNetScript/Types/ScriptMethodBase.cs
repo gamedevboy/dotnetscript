@@ -3,6 +3,8 @@ using System.Linq;
 using DotNetScript.Runtime;
 using Mono.Cecil;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using DotNetScript.Types.Reference;
 
 namespace DotNetScript.Types
 {
@@ -36,13 +38,32 @@ namespace DotNetScript.Types
         public object Invoke(object target, params object[] args)
         {
             var scriptObject = target as ScriptObject;
+            var scriptRef = target as IScriptReference;
 
             if (IsHost || DeclareType.IsDelegate)
             {
                 if (scriptObject?.HostInstance != null)
                     target = scriptObject.HostInstance;
 
-                return GetNativeMethod(args.Select(_ => _?.GetType()).ToArray())?.Invoke(target, args);
+                if (scriptRef != null)
+                    target = scriptRef.Value;
+
+                for (var i = 0; i < args.Length; i++)
+                {
+                    scriptObject = args[i] as ScriptObject;
+
+                    if (scriptObject?.HostInstance != null)
+                        args[i] = scriptObject.HostInstance;
+                }
+
+                try
+                {
+                    return GetNativeMethod(args.Select(_ => _?.GetType()).ToArray())?.Invoke(target, args);
+                }
+                catch
+                {
+                    return null;
+                }
             }
             else
             {
